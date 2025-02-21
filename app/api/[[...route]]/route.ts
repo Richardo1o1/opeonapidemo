@@ -1,18 +1,18 @@
 import { handle } from 'hono/vercel';
 
-import createApp from "./lab/create-app";
-
+import createApp from "./lib/create-app";
+import configureOpenAPI from './lib/configure-openapi';
+import index from "./routes/index.route";
 const app = createApp();
 
-app.get("/", (c) => {
-  return c.text("Hello Hono");
-});
+configureOpenAPI(app);
 
-app.get("/error", (c) => {
-  c.status(422);
-  //add a custom error message to logger
-  c.var.logger.info("Wow! Log here");
-  throw new Error("This is an error");
+const routes = [
+  index,
+] as const;
+
+routes.forEach((route) => {
+  app.route("/", route);
 });
 
 

@@ -1,6 +1,7 @@
 {
   "name": "opeonapidemo",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -12,6 +13,8 @@
   "dependencies": {
     "@hono/node-server": "^1.13.8",
     "@hono/zod-openapi": "^0.18.4",
+    "@scalar/nextjs-api-reference": "^0.5.10",
+    "add": "^2.0.6",
     "dotenv": "^16.4.7",
     "dotenv-expand": "^12.0.1",
     "hono": "^4.7.2",
