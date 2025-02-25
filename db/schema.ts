@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { createSelectSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 
 export const tasks = sqliteTable("tasks", {
   id: integer("id", { mode: "number" })
@@ -9,11 +11,23 @@ export const tasks = sqliteTable("tasks", {
   done: integer("done", { mode: "boolean" })
     .notNull()
     .default(false),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .$onUpdate(() => new Date()),
+  createdAt:  text('created_at')
+    .notNull()
+    .default(sql`(current_timestamp)`),
+  updatedAt:text('updated_at')
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const selectTasksSchema = createSelectSchema(tasks);
+export const insertTasksSchema = createInsertSchema(
+  tasks,
+  {
+    name: z.string().min(1).max(255),
+    done: z.boolean(),
+  },
+  ).omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  });
