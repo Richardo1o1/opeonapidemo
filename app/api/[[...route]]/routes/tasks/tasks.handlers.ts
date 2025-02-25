@@ -4,7 +4,6 @@ import * as HttpstatusPhase from "stoker/http-status-phrases";
 import type { CreateRoute, GetByIdRoute, ListRoute } from "./tasks.routes";
 import db from "@/db";
 import { tasks } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export const list: AppRouteHandler<ListRoute> = async (c) => {
   const tasks = await db.query.tasks.findMany();
