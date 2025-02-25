@@ -15,3 +15,4 @@ export const IdParamsSchema = z.object({
 });
 
 export const notFoundSchema = createMessageObjectSchema(HttpStatusPhrases.NOT_FOUND);
+export const badRequestSchema = createMessageObjectSchema(HttpStatusPhrases.BAD_REQUEST);
