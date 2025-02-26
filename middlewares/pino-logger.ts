@@ -2,6 +2,7 @@ import { pinoLogger } from 'hono-pino';
 import PinoPretty from 'pino-pretty';
 import pino from 'pino';
 import env from "@/utility/env";
+import crypto from "crypto";
 
 export function pnLogger() {
   return pinoLogger({

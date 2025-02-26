@@ -1,13 +1,19 @@
 import { z } from "zod";
 import { expand } from 'dotenv-expand';
 import { config } from 'dotenv';
+import path from "node:path";
 
-expand(config());
+expand(config({
+  path: path.resolve(
+    process.cwd(),
+    process.env.NODE_ENV === "test" ? ".env.test" : ".env",
+  ),
+}));
 
 const EnvSchema = z.object({
     NODE_ENV: z.string().default("development"),
     PORT: z.coerce.number().default(9999),
-    LOG_LEVEL: z.enum(["fatal","error","warn", "info", "debug","trace"]),
+    LOG_LEVEL: z.enum(["fatal","error","warn", "info", "debug","trace","silent"]),
     DATABASE_URL: z.string().url(),
     DATABASE_AUTH_TOKEN: z.string().optional(),
 });

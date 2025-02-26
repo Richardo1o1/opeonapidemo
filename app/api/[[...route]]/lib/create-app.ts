@@ -3,7 +3,7 @@ import { notFound, onError } from "stoker/middlewares";
 import { defaultHook } from "stoker/openapi";
 
 import {  pnLogger } from "@/middlewares/pino-logger";
-import type { AppBindings } from "@/utility/types";
+import type { AppBindings, AppOpenAPI } from "@/utility/types";
 
 export function createRouter() {
     return new OpenAPIHono<AppBindings>({
@@ -22,4 +22,10 @@ export default function createApp(){
     app.onError(onError);
 
     return app;
+}
+
+export function createTestApp(router: AppOpenAPI) {
+    const testApp = createApp();
+    testApp.route("/",router);
+    return testApp;
 }
