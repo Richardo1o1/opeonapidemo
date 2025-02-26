@@ -82,10 +82,6 @@ export const patch = createRoute({
       notFoundSchema,
       "The task id was not found",
     ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      badRequestSchema,
-      "Update data is empty",
-    ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(IdParamsSchema)
         .or(createErrorSchema(patchTasksSchema)),

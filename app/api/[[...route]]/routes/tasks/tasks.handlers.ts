@@ -13,6 +13,7 @@ import type {
 
 import db from "@/db";
 import { tasks } from "@/db/schema";
+import { ZOD_ERROR_CODES, ZOD_ERROR_MESSAGES } from "@/utility/constants";
 
 export const list: AppRouteHandler<ListRoute> = async (c) => {
   const tasks = await db.query.tasks.findMany();
@@ -43,8 +44,23 @@ export const patch: AppRouteHandler<PatchRoute> = async (c) => {
   const { id } = c.req.valid("param");
   const updates = c.req.valid("json");
 
-  if (updates.name === undefined && updates.done === undefined) {
-    return c.json({ message: HttpstatusPhase.BAD_REQUEST }, HttpStatusCodes.BAD_REQUEST);
+  if (Object.keys(updates).length === 0) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          issues: [
+            {
+              code: ZOD_ERROR_CODES.INVALID_UPDATES,
+              path: [],
+              message: ZOD_ERROR_MESSAGES.NO_UPDATES,
+            },
+          ],
+          name: "ZodError",
+        },
+      },
+      HttpStatusCodes.UNPROCESSABLE_ENTITY,
+    );
   };
 
   const [task] = await db.update(tasks)
