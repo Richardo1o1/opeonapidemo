@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  defaultDropAnimation,
 } from "@dnd-kit/core"
 import {
   arrayMove,
@@ -36,6 +37,7 @@ interface Task {
   id: number
   name: string
   done: boolean
+  order: number
 }
 
 type TaskAction =
@@ -53,6 +55,7 @@ function tasksReducer(tasks: Task[], action: TaskAction): Task[] {
           id: Date.now(),
           name: action.name,
           done: false,
+          order: tasks.length,
         },
       ]
     }
@@ -69,7 +72,10 @@ function tasksReducer(tasks: Task[], action: TaskAction): Task[] {
       return tasks.filter((t) => t.id !== action.id)
     }
     case "reordered": {
-      return action.tasks
+      return action.tasks.map((task, index) => ({
+        ...task,
+        order: index, 
+      }))
     }
     default: {
       throw Error("Unknown action")
@@ -89,11 +95,12 @@ interface SortableTaskItemProps {
 function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingTask }: SortableTaskItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
-
+    
   return (
     <div
       ref={setNodeRef}
@@ -229,8 +236,8 @@ export default function TaskManager() {
       dispatch({
         type: "reordered",
         tasks: arrayMove(tasks, oldIndex, newIndex),
-      })
-    }
+      })      
+    };
   }
 
   return (

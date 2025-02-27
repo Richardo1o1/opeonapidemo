@@ -11,6 +11,8 @@ export const tasks = sqliteTable("tasks", {
   done: integer("done", { mode: "boolean" })
     .notNull()
     .default(false),
+  order: integer("order", { mode: "number" })
+    .notNull(),
   createdAt:  text('created_at')
     .notNull()
     .default(sql`(current_timestamp)`),
@@ -25,6 +27,7 @@ export const insertTasksSchema = createInsertSchema(
   {
     name: z.string().min(1).max(255),
     done: z.boolean(),
+    order: z.number(),
   },
   ).omit({
     id: true,

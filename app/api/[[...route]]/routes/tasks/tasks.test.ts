@@ -45,12 +45,14 @@ describe("tasks routes", () => {
 
   const id = 1;
   const name = "Learn vitest";
+  const order = 0;
 
   it("post /tasks creates a task", async () => {
     const response = await client.api.tasks.$post({
       json: {
         name,
         done: false,
+        order
       },
     });
     expect(response.status).toBe(200);
@@ -58,6 +60,7 @@ describe("tasks routes", () => {
       const json = await response.json();
       expect(json.name).toBe(name);
       expect(json.done).toBe(false);
+      expect(json.order).toBe(order);
     }
   });
 
@@ -110,6 +113,7 @@ describe("tasks routes", () => {
       const json = await response.json();
       expect(json.name).toBe(name);
       expect(json.done).toBe(false);
+      expect(json.order).toBe(order);
     }
   });
 
@@ -146,6 +150,24 @@ describe("tasks routes", () => {
     }
   });
 
+  it("patch /tasks/{id} validates the order param", async () => {
+    const response = await client.api.tasks[":id"].$patch({
+      param: {
+        id,
+      },
+      json: {
+        // @ts-expect-error
+        order: "wat",
+      },
+    });
+    expect(response.status).toBe(422);
+    if (response.status === 422) {
+      const json = await response.json();
+      expect(json.error.issues[0].path[0]).toBe("order");
+      expect(json.error.issues[0].message).toBe(ZOD_ERROR_MESSAGES.EXPECTED_NUMBER_1);
+    }
+  });
+
   it("patch /tasks/{id} validates empty body", async () => {
     const response = await client.api.tasks[":id"].$patch({
       param: {
@@ -161,7 +183,7 @@ describe("tasks routes", () => {
     }
   });
 
-  it("patch /tasks/{id} updates a single property of a task", async () => {
+  it("patch /tasks/{id} updates a single property (done) of a task", async () => {
     const response = await client.api.tasks[":id"].$patch({
       param: {
         id,
@@ -174,6 +196,22 @@ describe("tasks routes", () => {
     if (response.status === 200) {
       const json = await response.json();
       expect(json.done).toBe(true);
+    }
+  });
+
+  it("patch /tasks/{id} updates a single property (order) of a task", async () => {
+    const response = await client.api.tasks[":id"].$patch({
+      param: {
+        id,
+      },
+      json: {
+        order: 999,
+      },
+    });
+    expect(response.status).toBe(200);
+    if (response.status === 200) {
+      const json = await response.json();
+      expect(json.order).toBe(999);
     }
   });
 

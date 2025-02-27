@@ -20,6 +20,7 @@ export const badRequestSchema = createMessageObjectSchema(HttpStatusPhrases.BAD_
 export const ZOD_ERROR_MESSAGES = {
   REQUIRED: "Required",
   EXPECTED_NUMBER: "Expected number, received nan",
+  EXPECTED_NUMBER_1: "Expected number, received string",
   NO_UPDATES: "No updates provided",
 };
 
