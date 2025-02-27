@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, GripVertical, Plus, Trash2, X } from "lucide-react"
+import { Check, GripVertical, Loader2, Plus, Trash2, X } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -10,7 +10,6 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  defaultDropAnimation,
 } from "@dnd-kit/core"
 import {
   arrayMove,
@@ -30,8 +29,10 @@ import {
   SheetDescription, 
   SheetHeader, 
   SheetTitle, 
-  SheetTrigger 
+  SheetTrigger,
+  SheetClose
 } from "@/components/ui/sheet"
+import { useGetTasksList } from "@/hooks/use-get-tasks-list"
 
 interface Task {
   id: number
@@ -41,6 +42,7 @@ interface Task {
 }
 
 type TaskAction =
+  | { type: "loaded"; tasks: Task[] }
   | { type: "added"; name: string }
   | { type: "changed"; task: Task }
   | { type: "deleted"; id: number }
@@ -48,6 +50,9 @@ type TaskAction =
 
 function tasksReducer(tasks: Task[], action: TaskAction): Task[] {
   switch (action.type) {
+    case "loaded": {
+      return action.tasks
+    }
     case "added": {
       return [
         ...tasks,
@@ -95,7 +100,6 @@ interface SortableTaskItemProps {
 function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingTask }: SortableTaskItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
 
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -133,7 +137,7 @@ function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingT
             if (e.key === "Enter") {
               onUpdate(task, editingTask.name)
             } else if (e.key === "Escape") {
-              onEdit(null as Task | null)
+              onEdit(null)
             }
           }}
           className="flex-1"
@@ -163,10 +167,14 @@ function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingT
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="outline">Cancel</Button>
-            <Button variant="destructive" onClick={() => onDelete(task.id)}>
-              Delete
-            </Button>
+            <SheetClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </SheetClose>
+            <SheetClose asChild>
+              <Button variant="destructive" onClick={() => onDelete(task.id)}>
+                Delete
+              </Button>
+            </SheetClose>
           </div>
         </SheetContent>
       </Sheet>
@@ -185,6 +193,19 @@ export default function TaskManager() {
   const [tasks, dispatch] = React.useReducer(tasksReducer, [])
   const [newTaskName, setNewTaskName] = React.useState("")
   const [editingTask, setEditingTask] = React.useState<Task | null>(null)
+  const [dataLoaded, setDataLoaded] = React.useState(false)
+
+  const tasksQuery = useGetTasksList();
+  const isLoading = tasksQuery.isLoading;
+  
+  // 使用useEffect处理数据加载，避免无限循环
+  React.useEffect(() => {
+    if (tasksQuery.data && tasksQuery.data.length > 0 && !dataLoaded) {
+      const tasksData = tasksQuery.data.map(({ createdAt, updatedAt, ...rest }) => rest);
+      dispatch({ type: "loaded", tasks: tasksData });
+      setDataLoaded(true);
+    }
+  }, [tasksQuery.data, dataLoaded]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -237,7 +258,7 @@ export default function TaskManager() {
         type: "reordered",
         tasks: arrayMove(tasks, oldIndex, newIndex),
       })      
-    };
+    }
   }
 
   return (
@@ -261,25 +282,31 @@ export default function TaskManager() {
           </Button>
         </form>
 
-        <div className="space-y-4">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={tasks} strategy={verticalListSortingStrategy}>
-              {tasks.map((task) => (
-                <SortableTaskItem
-                  key={task.id}
-                  task={task}
-                  onToggle={handleToggleTask}
-                  onEdit={setEditingTask}
-                  onUpdate={handleUpdateTask}
-                  onDelete={handleDeleteTask}
-                  editingTask={editingTask}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
+        {isLoading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={tasks} strategy={verticalListSortingStrategy}>
+                {tasks.map((task) => (
+                  <SortableTaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={handleToggleTask}
+                    onEdit={setEditingTask}
+                    onUpdate={handleUpdateTask}
+                    onDelete={handleDeleteTask}
+                    editingTask={editingTask}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
 
-          {tasks.length === 0 && <div className="text-center text-muted-foreground">No tasks yet. Add one above!</div>}
-        </div>
+            {tasks.length === 0 && <div className="text-center text-muted-foreground">No tasks yet. Add one above!</div>}
+          </div>
+        )}
       </Card>
     </div>
   )
