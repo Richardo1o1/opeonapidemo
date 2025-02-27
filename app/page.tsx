@@ -1,102 +1,279 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import * as React from "react"
+import { Check, GripVertical, Plus, Trash2, X } from "lucide-react"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetDescription, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger 
+} from "@/components/ui/sheet"
+
+interface Task {
+  id: number
+  name: string
+  done: boolean
+}
+
+type TaskAction =
+  | { type: "added"; name: string }
+  | { type: "changed"; task: Task }
+  | { type: "deleted"; id: number }
+  | { type: "reordered"; tasks: Task[] }
+
+function tasksReducer(tasks: Task[], action: TaskAction): Task[] {
+  switch (action.type) {
+    case "added": {
+      return [
+        ...tasks,
+        {
+          id: Date.now(),
+          name: action.name,
+          done: false,
+        },
+      ]
+    }
+    case "changed": {
+      return tasks.map((t) => {
+        if (t.id === action.task.id) {
+          return action.task
+        } else {
+          return t
+        }
+      })
+    }
+    case "deleted": {
+      return tasks.filter((t) => t.id !== action.id)
+    }
+    case "reordered": {
+      return action.tasks
+    }
+    default: {
+      throw Error("Unknown action")
+    }
+  }
+}
+
+interface SortableTaskItemProps {
+  task: Task
+  onToggle: (task: Task) => void
+  onEdit: (task: Task | null) => void
+  onUpdate: (task: Task, newName: string) => void
+  onDelete: (id: number) => void
+  editingTask: Task | null
+}
+
+function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingTask }: SortableTaskItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing
-            {" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center gap-2 rounded-lg border p-4 transition-colors hover:bg-muted ${
+        isDragging ? "opacity-50" : ""
+      }`}
+    >
+      <Button variant="ghost" size="icon" className="cursor-grab touch-none" {...attributes} {...listeners}>
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+        <span className="sr-only">Reorder task</span>
+      </Button>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <Button variant="ghost" size="icon" onClick={() => onToggle(task)} className="flex items-center justify-center">
+        <div
+          className={`h-5 w-5 rounded-sm border ${
+            task.done ? "bg-primary border-primary flex items-center justify-center" : "border-muted-foreground"
+          }`}
+        >
+          {task.done && <Check className="h-3 w-3 text-primary-foreground" />}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <span className="sr-only">Mark task as {task.done ? "undone" : "done"}</span>
+      </Button>
+
+      {editingTask?.id === task.id ? (
+        <Input
+          value={editingTask.name}
+          onChange={(e) => onEdit({ ...editingTask, name: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              onUpdate(task, editingTask.name)
+            } else if (e.key === "Escape") {
+              onEdit(null as Task | null)
+            }
+          }}
+          className="flex-1"
+          autoFocus
+        />
+      ) : (
+        <span
+          onClick={() => onEdit(task)}
+          className={`flex-1 cursor-pointer ${task.done ? "text-muted-foreground line-through" : ""}`}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          {task.name}
+        </span>
+      )}
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="hidden group-hover:inline-flex hover:text-destructive">
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Delete task</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>Delete Task</SheetTitle>
+            <SheetDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="outline">Cancel</Button>
+            <Button variant="destructive" onClick={() => onDelete(task.id)}>
+              Delete
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {editingTask?.id === task.id && (
+        <Button variant="ghost" size="icon" onClick={() => onEdit(null)}>
+          <X className="h-4 w-4" />
+          <span className="sr-only">Cancel editing</span>
+        </Button>
+      )}
     </div>
-  );
+  )
+}
+
+export default function TaskManager() {
+  const [tasks, dispatch] = React.useReducer(tasksReducer, [])
+  const [newTaskName, setNewTaskName] = React.useState("")
+  const [editingTask, setEditingTask] = React.useState<Task | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  function handleAddTask(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newTaskName.trim()) return
+
+    dispatch({
+      type: "added",
+      name: newTaskName.trim(),
+    })
+    setNewTaskName("")
+  }
+
+  function handleToggleTask(task: Task) {
+    dispatch({
+      type: "changed",
+      task: { ...task, done: !task.done },
+    })
+  }
+
+  function handleUpdateTask(task: Task, newName: string) {
+    dispatch({
+      type: "changed",
+      task: { ...task, name: newName },
+    })
+    setEditingTask(null)
+  }
+
+  function handleDeleteTask(id: number) {
+    dispatch({
+      type: "deleted",
+      id,
+    })
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = tasks.findIndex((task) => task.id === active.id)
+      const newIndex = tasks.findIndex((task) => task.id === over.id)
+
+      dispatch({
+        type: "reordered",
+        tasks: arrayMove(tasks, oldIndex, newIndex),
+      })
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted p-4 md:p-6 lg:p-8">
+      <Card className="mx-auto max-w-2xl space-y-6 p-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">Task Manager</h1>
+          <p className="text-sm text-muted-foreground">Manage your tasks efficiently with this modern interface.</p>
+        </div>
+
+        <form onSubmit={handleAddTask} className="flex gap-2">
+          <Input
+            placeholder="Add a new task..."
+            value={newTaskName}
+            onChange={(e) => setNewTaskName(e.target.value)}
+            className="flex-1"
+          />
+          <Button type="submit" size="icon">
+            <Plus className="h-4 w-4" />
+            <span className="sr-only">Add task</span>
+          </Button>
+        </form>
+
+        <div className="space-y-4">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={tasks} strategy={verticalListSortingStrategy}>
+              {tasks.map((task) => (
+                <SortableTaskItem
+                  key={task.id}
+                  task={task}
+                  onToggle={handleToggleTask}
+                  onEdit={setEditingTask}
+                  onUpdate={handleUpdateTask}
+                  onDelete={handleDeleteTask}
+                  editingTask={editingTask}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+
+          {tasks.length === 0 && <div className="text-center text-muted-foreground">No tasks yet. Add one above!</div>}
+        </div>
+      </Card>
+    </div>
+  )
 }
