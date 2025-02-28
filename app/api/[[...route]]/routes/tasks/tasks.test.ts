@@ -123,6 +123,7 @@ describe("tasks routes", () => {
         id,
       },
       json: {
+        id,
         name: "",
       },
     });
@@ -140,7 +141,9 @@ describe("tasks routes", () => {
         // @ts-expect-error
         id: "wat",
       },
-      json: {},
+      json: {
+        id
+      },
     });
     expect(response.status).toBe(422);
     if (response.status === 422) {
@@ -156,6 +159,7 @@ describe("tasks routes", () => {
         id,
       },
       json: {
+        id,
         // @ts-expect-error
         order: "wat",
       },
@@ -173,7 +177,25 @@ describe("tasks routes", () => {
       param: {
         id,
       },
-      json: {},
+      // @ts-expect-error
+      json: {
+      },
+    });
+    expect(response.status).toBe(422);
+    if (response.status === 422) {
+      const json = await response.json();
+      expect(json.error.issues[0].code).toBe(ZOD_ERROR_CODES.INVALID_TYPE);
+    }
+  });
+
+  it("patch /tasks/{id} validates empty body with id", async () => {
+    const response = await client.api.tasks[":id"].$patch({
+      param: {
+        id,
+      },
+      json: {
+        id,
+      },
     });
     expect(response.status).toBe(422);
     if (response.status === 422) {
@@ -189,6 +211,7 @@ describe("tasks routes", () => {
         id,
       },
       json: {
+        id,
         done: true,
       },
     });
@@ -205,6 +228,7 @@ describe("tasks routes", () => {
         id,
       },
       json: {
+        id,
         order: 999,
       },
     });

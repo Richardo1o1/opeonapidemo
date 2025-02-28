@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/sheet"
 import { useGetTasksList } from "@/hooks/use-get-tasks-list"
 import { useCreateTask } from "@/hooks/use-create-task"
+import { useUpdateTask } from "@/hooks/use-update-task"
 
 interface Task {
   id: number
@@ -200,6 +201,7 @@ export default function TaskManager() {
   const isLoading = tasksQuery.isLoading;
   
   const createMutation = useCreateTask();
+  const editMutation = useUpdateTask();
 
   React.useEffect(() => {
     if (tasksQuery.data && tasksQuery.data.length > 0 && !dataLoaded) {
@@ -245,8 +247,16 @@ export default function TaskManager() {
     dispatch({
       type: "changed",
       task: { ...task, name: newName },
-    })
-    setEditingTask(null)
+    });
+
+    editMutation.mutate(
+      {
+        id: task.id,
+        name: newName
+      }
+    );
+
+    setEditingTask(null);
   }
 
   function handleDeleteTask(id: number) {

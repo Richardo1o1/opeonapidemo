@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const tasks = sqliteTable("tasks", {
@@ -35,4 +35,15 @@ export const insertTasksSchema = createInsertSchema(
     updatedAt: true,
   });
 
-export const patchTasksSchema = insertTasksSchema.partial();
+export const patchTasksSchema = createUpdateSchema(
+  tasks,
+  {
+    id: z.number(),
+    name: z.string().min(1).max(255).optional(),
+    done: z.boolean().optional(),
+    order: z.number().optional(),
+  },
+  ).omit({
+    createdAt: true,
+    updatedAt: true,
+});
