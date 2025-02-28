@@ -6,6 +6,7 @@ import { createErrorSchema  } from "stoker/openapi/schemas";
 import { notFoundSchema, IdParamsSchema, badRequestSchema } from "@/utility/constants";
 
 export const list = createRoute({
+  summary: "Get tasks list",
   tags: ["Tasks"],
   path: "/tasks",
   method: "get",
@@ -18,6 +19,7 @@ export const list = createRoute({
 });
 
 export const getById = createRoute({
+  summary: "Get task by id",
   tags: ["Tasks"],
   path: "/tasks/{id}",
   method: "get",
@@ -41,6 +43,7 @@ export const getById = createRoute({
 });
 
 export const create = createRoute({
+  summary: "Create a task",
   tags: ["Tasks"],
   path: "/tasks",
   method: "post",
@@ -63,6 +66,7 @@ export const create = createRoute({
 });
 
 export const patch = createRoute({
+  summary: "Update the task by id",
   tags: ["Tasks"],
   path: "/tasks/{id}",
   method: "patch",
@@ -91,6 +95,7 @@ export const patch = createRoute({
 });
 
 export const deleteById = createRoute({
+  summary: "Get the task by id",
   tags: ["Tasks"],
   path: "/tasks/{id}",
   method: "delete",

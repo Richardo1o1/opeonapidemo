@@ -33,6 +33,7 @@ import {
   SheetClose
 } from "@/components/ui/sheet"
 import { useGetTasksList } from "@/hooks/use-get-tasks-list"
+import { useCreateTask } from "@/hooks/use-create-task"
 
 interface Task {
   id: number
@@ -198,7 +199,8 @@ export default function TaskManager() {
   const tasksQuery = useGetTasksList();
   const isLoading = tasksQuery.isLoading;
   
-  // 使用useEffect处理数据加载，避免无限循环
+  const createMutation = useCreateTask();
+
   React.useEffect(() => {
     if (tasksQuery.data && tasksQuery.data.length > 0 && !dataLoaded) {
       const tasksData = tasksQuery.data.map(({ createdAt, updatedAt, ...rest }) => rest);
@@ -222,6 +224,13 @@ export default function TaskManager() {
       type: "added",
       name: newTaskName.trim(),
     })
+
+    createMutation.mutate({
+      name: newTaskName.trim(),
+      done: false,
+      order: tasks.length,
+    });
+
     setNewTaskName("")
   }
 
