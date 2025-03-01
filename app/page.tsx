@@ -23,18 +23,12 @@ import { CSS } from "@dnd-kit/utilities"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetDescription, 
-  SheetHeader, 
-  SheetTitle, 
-  SheetTrigger,
-  SheetClose
-} from "@/components/ui/sheet"
+
 import { useGetTasksList } from "@/hooks/use-get-tasks-list"
 import { useCreateTask } from "@/hooks/use-create-task"
 import { useUpdateTask } from "@/hooks/use-update-task"
+import { useDeleteTask } from "@/hooks/use-delete-task"
+import { useConfirmationDialog } from "@/hooks/use-confirmation-dialog"
 
 interface Task {
   id: number
@@ -101,12 +95,37 @@ interface SortableTaskItemProps {
 
 function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingTask }: SortableTaskItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  
+  const deleteMutation = useDeleteTask(task.id);
+
+  const { ConfirmationDialog, confirm } = useConfirmationDialog();
+
+  function handleDelete(id: number) {
+    confirm(
+      // Confirm callback
+      () => {
+        deleteMutation.mutate();
+        onDelete(id);
+      },
+      // Cancel callback
+      () => {},
+      // Custom options
+      {
+        title: "Delete task?",
+        description: `Are you sure you want to delete the task?`,
+        confirmText: "Delete",
+        cancelText: "Cancel",
+        variant: "destructive",
+      },
+    );
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  }
-    
+  };
+  
+  
   return (
     <div
       ref={setNodeRef}
@@ -154,32 +173,15 @@ function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingT
         </span>
       )}
 
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="hidden group-hover:inline-flex hover:text-destructive">
-            <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete task</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="right">
-          <SheetHeader>
-            <SheetTitle>Delete Task</SheetTitle>
-            <SheetDescription>
-              Are you sure you want to delete this task? This action cannot be undone.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-6 flex justify-end gap-3">
-            <SheetClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </SheetClose>
-            <SheetClose asChild>
-              <Button variant="destructive" onClick={() => onDelete(task.id)}>
-                Delete
-              </Button>
-            </SheetClose>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => handleDelete(task.id)}
+        className="hidden group-hover:inline-flex hover:text-destructive"
+      >
+        <Trash2 className="h-4 w-4" />
+        <span className="sr-only">Delete task</span>
+      </Button>
 
       {editingTask?.id === task.id && (
         <Button variant="ghost" size="icon" onClick={() => onEdit(null)}>
@@ -187,6 +189,8 @@ function SortableTaskItem({ task, onToggle, onEdit, onUpdate, onDelete, editingT
           <span className="sr-only">Cancel editing</span>
         </Button>
       )}
+
+      <ConfirmationDialog />
     </div>
   )
 }
