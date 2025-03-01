@@ -9,9 +9,9 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "data:web": "drizzle-kit studio",
-    "data:gen": "drizzle-kit generate",
-    "data:push": "drizzle-kit push",
+    "db:web": "drizzle-kit studio",
+    "db:gen": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
     "test": "NODE_ENV=test vitest"
   },
   "dependencies": {

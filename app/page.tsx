@@ -47,7 +47,8 @@ type TaskAction =
 function tasksReducer(tasks: Task[], action: TaskAction): Task[] {
   switch (action.type) {
     case "loaded": {
-      return action.tasks
+      // Sort tasks by order
+      return action.tasks.sort((a, b) => a.order - b.order)
     }
     case "added": {
       return [
@@ -244,7 +245,14 @@ export default function TaskManager() {
     dispatch({
       type: "changed",
       task: { ...task, done: !task.done },
-    })
+    });
+
+    editMutation.mutate(
+      {
+        id: task.id,
+        done: !task.done 
+      }
+    );
   }
 
   function handleUpdateTask(task: Task, newName: string) {
@@ -277,10 +285,24 @@ export default function TaskManager() {
       const oldIndex = tasks.findIndex((task) => task.id === active.id)
       const newIndex = tasks.findIndex((task) => task.id === over.id)
 
+      const newTasks = arrayMove(tasks, oldIndex, newIndex).map((task, index) => ({
+        ...task,
+        order: index,
+      }));
+  
       dispatch({
         type: "reordered",
-        tasks: arrayMove(tasks, oldIndex, newIndex),
-      })      
+        tasks: newTasks,
+      });
+      
+      newTasks.forEach((task) => {
+        editMutation.mutate(
+          {
+            id: task.id,
+            order: task.order
+          }
+        );
+      });
     }
   }
 
